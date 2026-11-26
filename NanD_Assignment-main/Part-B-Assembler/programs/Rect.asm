@@ -1,0 +1,22 @@
+// Draws a 16-pixel-wide, 16-row rectangle at the top-left of the screen.
+@SCREEN
+D=A
+@addr
+M=D
+@16
+D=A
+@n
+M=D
+(LOOP)
+@addr
+A=M
+M=-1
+@addr
+M=M+1
+@n
+MD=M-1
+@LOOP
+D;JGT
+(END)
+@END
+0;JMP

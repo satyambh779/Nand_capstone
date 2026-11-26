@@ -1,0 +1,35 @@
+// Hack CPU: executes one 16-bit Hack instruction per clock cycle.
+CHIP CPU {
+    IN inM[16], instruction[16], reset;
+    OUT outM[16], writeM, addressM[15], pc[15];
+
+    PARTS:
+    Not(in=instruction[15], out=isA);
+    And(a=instruction[15], b=instruction[5], out=loadAFromC);
+    Or(a=isA, b=loadAFromC, out=loadA);
+    And(a=instruction[15], b=instruction[4], out=loadD);
+    And(a=instruction[15], b=instruction[3], out=writeM);
+
+    Mux16(a=aluOut, b=instruction, sel=isA, out=aIn);
+    ARegister(in=aIn, load=loadA, out=aReg);
+    DRegister(in=aluOut, load=loadD, out=dReg);
+    Mux16(a=aReg, b=inM, sel=instruction[12], out=aluY);
+    ALU(x=dReg, y=aluY, zx=instruction[11], nx=instruction[10],
+        zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6],
+        out=aluOut, zr=zr, ng=ng);
+
+    Not(in=ng, out=notNegative);
+    Not(in=zr, out=notZero);
+    And(a=notNegative, b=notZero, out=positive);
+    And(a=instruction[0], b=positive, out=takeJgt);
+    And(a=instruction[1], b=zr, out=takeJeq);
+    And(a=instruction[2], b=ng, out=takeJlt);
+    Or(a=takeJgt, b=takeJeq, out=takeJgtOrJeq);
+    Or(a=takeJgtOrJeq, b=takeJlt, out=jumpCondition);
+    And(a=instruction[15], b=jumpCondition, out=pcLoad);
+
+    PC(in=aReg, load=pcLoad, inc=true, reset=reset, out=pcOut);
+    outM=aluOut;
+    addressM=aReg[0..14];
+    pc=pcOut[0..14];
+}
